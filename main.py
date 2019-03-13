@@ -14,12 +14,19 @@ dataset = Dataset()
 # split data into train and valid set
 X = np.asarray(dataset.X)
 Y = np.asarray(dataset.Y)
+if True:
+	Y = np.asarray(dataset.Ybin)
 x_train, x_valid, y_train, y_valid = train_test_split(X, Y, test_size=0.2, random_state=42)
 
 # build model
-param = {'objective': 'multi:softprob',
-		 }
 evallist = [(x_valid, y_valid)]
+"""
+# multiclass classification
+model = XGBClassifier(n_estimators=200,
+					  max_depth=5,
+					  #objective='multi:softprob',
+					  nthread=4)
+"""
 model = XGBClassifier()
 if not os.path.isfile('model.bin'):
 	print('start training')

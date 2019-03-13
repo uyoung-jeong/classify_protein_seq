@@ -12,6 +12,7 @@ class Dataset():
 		self.fasta_pickle_path = os.path.join(os.getcwd(), 'data', 'fasta_data.pkl')
 		self.x_pickle_path = os.path.join(os.getcwd(), 'data', 'x_data.pkl')
 		self.y_pickle_path = os.path.join(os.getcwd(), 'data', 'y_data.pkl')
+		self.y_bin_pickle_path = os.path.join(os.getcwd(), 'data', 'y_data.pkl')
 		self.acid_codes = ['A','B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y', 'Z', 'X']
 		self.idx_dict = {}
 		for i, c in enumerate(self.acid_codes):
@@ -19,6 +20,7 @@ class Dataset():
 		self.max_len = 500
 		self.X = []
 		self.Y = []
+		self.Ybin = []
 		self.num_class = 5
 		self.target_genes = ['a2', 'b2', 'b8', 'c8', 'd8']
 
@@ -56,6 +58,7 @@ class Dataset():
 				dic = {}
 				i=0
 				Y_label = self.get_label(data[0])
+				Y_bin_label = self.get_bin_label(data[0])
 				while i < len(data):
 					if data[i].find('>') != -1:
 						header = data[i].replace('\n', '')
@@ -73,6 +76,11 @@ class Dataset():
 						dic[name] = [name, desc, seq]
 						self.X.append(self.one_hot(seq))
 						self.Y.append(Y_label)
+						self.Ybin.append(Y_bin_label)
+						
+						# for balancing dataset labels
+						if len(dic)>=30 and Y_label == 5:
+							break
 					i += 1
 				return dic
 
@@ -88,7 +96,9 @@ class Dataset():
 			
 			with open(self.y_pickle_path, 'wb') as f:
 				pickle.dump(self.Y, f, pickle.HIGHEST_PROTOCOL)
-		
+				
+			with open(self.y_bin_pickle_path, 'wb') as f:
+				pickle.dump(self.Ybin, f, pickle.HIGHEST_PROTOCOL)
 		# load data
 		print('loading data')
 		with open(self.fasta_pickle_path, 'rb') as f:
@@ -98,6 +108,8 @@ class Dataset():
 		with open(self.y_pickle_path, 'rb') as f:
 			self.Y = pickle.load(f)
 
+		with open(self.y_bin_pickle_path, 'rb') as f:
+			self.Ybin = pickle.load(f)
 	def one_hot(self, s):
 		s = s.upper()
 		str2vec = np.zeros((self.max_len,len(self.acid_codes)), dtype='int64')
@@ -112,34 +124,26 @@ class Dataset():
 		return str2vec.flatten()
 
 	def get_label(self, s):
-		if False:
-			if s.find('A2') != -1:
-				return self.label_sheet[0]
-			elif s.find('B2') != -1:
-				return self.label_sheet[1]
-			elif s.find('B8') != -1:
-				return self.label_sheet[2]
-			elif s.find('C8') != -1:
-				return self.label_sheet[3]
-			elif s.find('D8') != -1:
-				return self.label_sheet[4]
-			else:
-				print("ERROR: invalid label")
-				exit()
-		if True:	
-			if s.find('A2') != -1:
-				return 1
-			elif s.find('B2') != -1:
-				return 2
-			elif s.find('B8') != -1:
-				return 3
-			elif s.find('C8') != -1:
-				return 4
-			elif s.find('D8') != -1:
-				return 5
-			else:
-				print("ERROR: invalid label")
-				exit()
+		if s.find('A2') != -1:
+			return 1
+		elif s.find('B2') != -1:
+			return 2
+		elif s.find('B8') != -1:
+			return 3
+		elif s.find('C8') != -1:
+			return 4
+		elif s.find('D8') != -1:
+			return 5
+		else:
+			print("ERROR: invalid label")
+			exit()
 			
 			
-			
+	def get_bin_label(self, s):
+		if s.find('A2') != -1 or s.find('B2') != -1:
+			return 0
+		elif s.find('B8') != -1 or s.find('C8') != -1 or s.find('D8') != -1:
+			return 1
+		else:
+			print("ERROR: invalid label")
+			exit()
